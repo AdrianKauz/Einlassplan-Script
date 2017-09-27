@@ -3,7 +3,10 @@
  * @author Adrian Kauz
  */
 
-var sScriptName = "FUEP-Script"
+var strScriptFullPath = WScript.ScriptFullName;
+var strScriptPath = strScriptFullPath.substring(0, strScriptFullPath.lastIndexOf("\\"));
+var strScriptName = "Einlassplan-Script"
+var strVorlage = "einlassplan_vorlage.xlsx";
 var oArgs = WScript.Arguments;
 var oCom;
 
@@ -33,16 +36,20 @@ function main()
 		return;
 	}
 
-	var arrAllMovies = loadAllMovies(oArgs(0));
+	//var arrAllMovies = loadAllMovies(oArgs(0));
 
+
+
+
+/*
 	for(var x = 0; x < arrAllMovies.length; x++){
         showInfoBox(arrAllMovies[x].toString());
 	}
-
-
-	return;
+*/
 	oCom.Excel.Visible = true;
-	oCom.Excel.Workbooks.Open(oArgs(0));
+	oWorkbook = oCom.Excel.Workbooks.Open(strScriptPath + "\\" + strVorlage);
+	oWorkSheet = oWorkbook.ActiveSheet;
+
 }
 
 
