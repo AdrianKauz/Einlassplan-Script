@@ -1,5 +1,5 @@
 # Einlassplan-Script
-Erstellt aktuellen Einlassplan anhand des CSV-Exportes aus EIKONA TMS  
+Erstellt aktuellen Einlassplan in MS-Excel anhand des CSV-Exportes aus EIKONA TMS.
 
 ## Getting Started
-Blablabla
+Script ist aktuell noch in der Entwicklungsphase.
