@@ -136,6 +136,10 @@ function loadScreeningsFromCSV(sPath) {
 		if (sCurrLine.length > 0) {
 			if (iCurrLineNr === 1) {
 				arrColumnTitles = sCurrLine.split(",");
+
+				if (arrColumnTitles.length > 0) {
+					arrColumnTitles = setValuesAsUnique(arrColumnTitles);
+				}
 			} else {
 				var arrCurrValues = sCurrLine.split(",");
 
@@ -149,6 +153,36 @@ function loadScreeningsFromCSV(sPath) {
 			}
 		}
 	}
+}
+
+
+/*
+================
+setValuesUnique
+================
+*/
+function setValuesAsUnique(arrValues)
+{
+	var sTemp = "";
+	for (var iOuterLoop = 0; iOuterLoop < arrValues.length - 1; iOuterLoop++) {
+		sTemp = arrValues[iOuterLoop];
+
+		for (var iCheckLoop = iOuterLoop; iCheckLoop < arrValues.length; iCheckLoop++) {
+			if (arrValues[iCheckLoop + 1] === sTemp) {
+				var iWordCounter = 0;
+				for (var iAdjLoop = iOuterLoop; iAdjLoop < arrValues.length; iAdjLoop++) {
+					if (arrValues[iAdjLoop] === sTemp) {
+						arrValues[iAdjLoop] = sTemp + "_" + (++iWordCounter).toString();
+					}
+				}
+
+				iWordCounter = 0;
+				break;
+			}
+		}
+	}
+
+	return arrValues;
 }
 
 
