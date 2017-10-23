@@ -3,10 +3,10 @@
  * @author Adrian Kauz
  */
 
-var strScriptFullPath = WScript.ScriptFullName;
-var strScriptPath = strScriptFullPath.substring(0, strScriptFullPath.lastIndexOf("\\"));
-var strScriptName = "Einlassplan-Script";
-var strVorlage = "einlassplan_vorlage.xlsx";
+var sScriptFullPath = WScript.ScriptFullName;
+var sScriptPath = sScriptFullPath.substring(0, sScriptFullPath.lastIndexOf("\\"));
+var sScriptName = "Einlassplan-Script";
+var sVorlage = "einlassplan_vorlage.xlsx";
 var oArgs = WScript.Arguments;
 var oCom;
 
@@ -36,6 +36,9 @@ function main()
         return;
     }
 
+    var ScreeningCollection = loadScreeningsFromCSV(oArgs(0));
+
+
     //var arrScreenings = loadScreeningsFromCSV(oArgs(0));
 
 
@@ -43,15 +46,15 @@ function main()
 
 /*
     for(var x = 0; x < arrAllMovies.length; x++){
-        showInfoBox(arrAllMovies[x].toString());
+        showInfoBox(arrAllMovies[x].ToString());
     }
-*/
+
     oCom.Excel.Visible = true;
     //oWorkbook = oCom.Excel.Workbooks.Open(strScriptPath + "\\" + strVorlage);
-	oWorkbook = oCom.Excel.Workbooks.Open(oArgs(0));
+    oWorkbook = oCom.Excel.Workbooks.Open(oArgs(0));
 
     oWorkSheet = oWorkbook.ActiveSheet;
-
+*/
 }
 
 
@@ -119,87 +122,107 @@ function isCSVFile(sPath)
 loadScreeningsFromCSV()
 ================
 */
-function loadScreeningsFromCSV(sPath)
-{
-    var regex = /(0[1-9]|[12][0-9]|3[01])[.](0[1-9]|1[012])[.](20)\d\d/g;
-    var oFile = oCom.FSO.OpenTextFile(sPath, 1);
-    var arrMovieObjects = [];
+function loadScreeningsFromCSV(sPath) {
+	var regex = /(0[1-9]|[12][0-9]|3[01])[.](0[1-9]|1[012])[.](20)\d\d/g;
+	var oFile = oCom.FSO.OpenTextFile(sPath, 1);
+	var arrColumnTitles = [];
+	var iCurrLineNr = 0;
+	var sCurrLine;
 
-    while(!oFile.AtEndOfStream) {
-        var arrCurrLine = oFile.ReadLine().split(",");
+	while (!oFile.AtEndOfStream) {
+		iCurrLineNr++;
+		sCurrLine = oFile.ReadLine();
 
-        if(arrCurrLine[0].match(regex) !== null){
-            var movieObject = new MovieObject();
+		if (sCurrLine.length > 0) {
+			if (iCurrLineNr === 1) {
+				arrColumnTitles = sCurrLine.split(",");
+			} else {
+				var arrCurrValues = sCurrLine.split(",");
 
-            movieObject.Datum                   = arrCurrLine[0];   // "Datum"
-            movieObject.SaalName                = arrCurrLine[1];   // "Saal"
-            movieObject.SaalNummer              = arrCurrLine[2];   // "Saal"
-            movieObject.Schiene                 = arrCurrLine[3];   // "Schiene"
-            movieObject.VorstellungStart        = arrCurrLine[4];   // "Vorstellung Start"
-            movieObject.HauptfilmStart          = arrCurrLine[5];   // "Hauptfilm Start"
-            movieObject.Pause                   = arrCurrLine[6];   // "Pause"
-            movieObject.PauseEnde               = arrCurrLine[7];   // "Pause-Ende"
-            movieObject.Dialicht                = arrCurrLine[8];   // "Dialicht"
-            movieObject.Ende                    = arrCurrLine[9];   // "Ende"
-            movieObject.Format                  = arrCurrLine[10];  // "2D/3D"
-            movieObject.Filmtitel               = arrCurrLine[11];  // "Filmtitel"
-            movieObject.FSK                     = arrCurrLine[12];  // "FSK"
-            movieObject.Aufraumzeit             = arrCurrLine[13];  // "Aufräumzeit"
-            movieObject.NV                      = arrCurrLine[14];  // "Nächste Vorstellung"
-            movieObject.NVFormat                = arrCurrLine[15];  // "2D/3D"
-            movieObject.NVFilmTitel             = arrCurrLine[16];  // "Filmtitel"
-            arrMovieObjects.push(movieObject);
-        }
-    }
-
-    return arrMovieObjects;
+				if (arrColumnTitles.length === arrCurrValues.length) {
+					var oCurrScreening = new ScreeningObject();
+					oCurrScreening.addValues(arrColumnTitles, arrCurrValues);
+					oCurrScreening.setSortColumn("Dialicht");
+					showInfoBox(oCurrScreening.toString());
+					return;
+				}
+			}
+		}
+	}
 }
+
+
 
 /*
 ================
-MovieObject()
+ScreeningObject()
 ================
 */
-function MovieObject()
+function ScreeningObject()
 {
-    this.Datum = null;
-    this.SaalName = null;
-    this.SaalNummer = null;
-    this.Schiene = null;
-    this.VorstellungStart = null;
-    this.HauptfilmStart = null;
-    this.Pause = null;
-    this.PauseEnde = null;
-    this.Dialicht = null;
-    this.Ende = null;
-    this.Format = null;
-    this.Filmtitel = null;
-    this.FSK = null;
-    this.Aufraumzeit = null;
-    this.NV = null;
-    this.NVFormat = null;
-    this.NVFilmTitel = null;
+    this.dictValues = new Dictionary();
+	this.sSortColumn = "Vorstellung Start";
 
-    this.toString = function(){
-        return "Datum:\t\t" + this.Datum
-            + "\nSaalName:\t" + this.SaalName
-            + "\nSaalNummer:\t" + this.SaalNummer
-            + "\nSchiene:\t\t" + this.Schiene
-            + "\nVorstellungStart:\t" + this.VorstellungStart
-            + "\nHauptfilmStart:\t" + this.HauptfilmStart
-            + "\nPause:\t\t" + this.Pause
-            + "\nPauseEnde:\t" + this.PauseEnde
-            + "\nDialicht:\t\t" + this.Dialicht
-            + "\nEnde:\t\t" + this.Ende
-            + "\nFormat:\t\t" + this.Format
-            + "\nFilmtitel:\t\t" + this.Filmtitel
-            + "\nFSK:\t\t" + this.FSK
-            + "\nAufräumzeit:\t" + this.Aufraumzeit
-            + "\nNV:\t\t" + this.NV
-            + "\nNVFormat:\t" + this.NVFormat
-            + "\nNVFilmTitel:\t" + this.NVFilmTitel;
-    }
+	/**
+	 * Fills up dictionary with screening attributes.
+	 * @param {Array} arrNames
+	 * @param {Array} arrValues
+	 */
+    this.addValues = function(arrNames, arrValues)
+    {
+        if ((arrNames !== null) && (arrValues !== null)) {
+            for (var x = 0; x < arrNames.length; x++) {
+                this.dictValues.add(arrNames[x], arrValues[x]);
+            }
+        }
+    };
+
+
+	/**
+	 * @param {String} sNewSortColumn
+	 */
+    this.setSortColumn = function(sNewSortColumn)
+    {
+	    if (sNewSortColumn !== "" && sNewSortColumn.constructor === String) {
+	        if (this.dictValues.count() > 0 ) {
+	            if (this.dictValues.containsKey(sNewSortColumn)) {
+	                this.sSortColumn = sNewSortColumn;
+                }
+            }
+	    }
+    };
+
+
+	/**
+	 * For value comparison.
+	 * @param {Object} oObject1
+	 * @param {Object} oObject2
+	 * @returns {Number}
+	 */
+    this.compare = function( oObject1, oObject2 )
+    {
+        return 1;
+    };
+
+
+	/**
+	 * Returns content of the screening object as String.
+	 * @returns {String}
+	 */
+	this.toString = function()
+	{
+	    sNewString = "";
+
+	    for (var x = 0; x < this.dictValues.count(); x++) {
+	        sCurrKey = this.dictValues.getKey(x);
+	        sNewString += "\"" + sCurrKey + "\" --> " + this.dictValues.get(sCurrKey) + "\n";
+        }
+
+		return sNewString;
+	};
 }
+
+
 
 /*
 ================
@@ -208,81 +231,94 @@ Dictionary()
 */
 function Dictionary()
 {
-    this.arrDictionary = null;
+    this.arrDictionary = [];
 
-    if (this.arrDictionary === null) {
-        this.arrDictionary = [];
-    }
 
-	/**
+    /**
      * Add new element to the dictionary.
-	 * @param {String} sKey
+     * @param {String} sKey
      * @param {Object} oObject
      * @returns {boolean}
-	 */
-    this.Add = function(sKey, oObject)
+     */
+    this.add = function(sKey, oObject)
     {
         if (sKey !== "" && sKey.constructor === String) {
-	        for (var x = 0; x < this.arrDictionary.length; x++) {
-		        if (this.arrDictionary[x]._sKey === sKey) {
-			        this.arrDictionary[x]._oObject = oObject;
-			        return true;
-		        }
-	        }
+            for (var x = 0; x < this.arrDictionary.length; x++) {
+                if (this.arrDictionary[x]._sKey === sKey) {
+                    this.arrDictionary[x]._oObject = oObject;
+                    return true;
+                }
+            }
 
-	        this.arrDictionary.push({_sKey : sKey, _oObject : oObject});
-	        return true;
+            this.arrDictionary.push({_sKey : sKey, _oObject : oObject});
+            return true;
         }
 
         return false;
     };
 
 
-	/**
-	 * If exists, return object from dictionary element.
-	 * @param {String} sKey
+    /**
+     * If exists, return object from dictionary element.
+     * @param {String} sKey
      * @returns {Object}
-	 */
-	this.Get = function(sKey)
-	{
-		if (sKey.constructor === String) {
-			for (var x = 0; x < this.arrDictionary.length; x++) {
-				if(this.arrDictionary[x]._sKey === sKey) {
-					return this.arrDictionary[x]._oObject;
+     */
+    this.get = function(sKey)
+    {
+        if (sKey.constructor === String) {
+            for (var x = 0; x < this.arrDictionary.length; x++) {
+                if(this.arrDictionary[x]._sKey === sKey) {
+                    return this.arrDictionary[x]._oObject;
                 }
             }
         }
 
-		return null;
-	};
+        return null;
+    };
 
 
-	/**
-	 * Checks if dictionary entry already exists
-	 * @param {String} sKey
+    /**
+     * Checks if dictionary entry already exists
+     * @param {String} sKey
      * @returns {object}
-	 */
-	this.ContainsKey = function(sKey)
+     */
+    this.containsKey = function(sKey)
     {
-	    if (sKey.constructor === String) {
-		    for (var x = 0; x < this.arrDictionary.length; x++) {
-			    if(this.arrDictionary[x]._sKey === sKey) {
-				    return true;
-			    }
-		    }
+        if (sKey.constructor === String) {
+            for (var x = 0; x < this.arrDictionary.length; x++) {
+                if(this.arrDictionary[x]._sKey === sKey) {
+                    return true;
+                }
+            }
 
-		    return false;
-	    }
+            return false;
+        }
 
-	    return null;
+        return null;
     };
 
 
 	/**
-	 * Returns size of dictionary
-	 * @returns {number}
+     * @param {Number} iPosition
+	 * @returns {String}
 	 */
-	this.Count = function()
+    this.getKey = function(iPosition)
+    {
+        if (!isNaN(iPosition)) {
+            if (iPosition < this.arrDictionary.length) {
+                return this.arrDictionary[iPosition]._sKey;
+            }
+        }
+
+        return null;
+    };
+
+
+    /**
+     * Returns size of dictionary
+     * @returns {number}
+     */
+    this.count = function()
     {
         return this.arrDictionary.length;
     };
