@@ -123,38 +123,72 @@ loadScreeningsFromCSV()
 ================
 */
 function loadScreeningsFromCSV(sPath) {
-	var regex = /(0[1-9]|[12][0-9]|3[01])[.](0[1-9]|1[012])[.](20)\d\d/g;
-	var oFile = oCom.FSO.OpenTextFile(sPath, 1);
-	var arrColumnTitles = [];
-	var iCurrLineNr = 0;
-	var sCurrLine;
+    var oFile = oCom.FSO.OpenTextFile(sPath, 1);
+    var arrColumnTitles = [];
+    var iCurrLineNr = 0;
+    var sCurrLine;
 
-	while (!oFile.AtEndOfStream) {
-		iCurrLineNr++;
-		sCurrLine = oFile.ReadLine();
+    while (!oFile.AtEndOfStream) {
+        iCurrLineNr++;
+        sCurrLine = oFile.ReadLine();
 
-		if (sCurrLine.length > 0) {
-			if (iCurrLineNr === 1) {
-				arrColumnTitles = sCurrLine.split(",");
+        if (sCurrLine.length > 0) {
+            if (iCurrLineNr === 1) {
+                arrColumnTitles = sCurrLine.split(",");
 
-				if (arrColumnTitles.length > 0) {
-					arrColumnTitles = setValuesAsUnique(arrColumnTitles);
-				}
-			} else {
-				var arrCurrValues = sCurrLine.split(",");
+                if (arrColumnTitles.length > 0) {
+                    arrColumnTitles = setValuesAsUnique(arrColumnTitles);
+                }
+            } else {
+                var arrCurrValues = sCurrLine.split(",");
 
-				if (arrColumnTitles.length === arrCurrValues.length) {
-					var oCurrScreening = new ScreeningObject();
-					oCurrScreening.addValues(arrColumnTitles, arrCurrValues);
-					oCurrScreening.setSortColumn("Dialicht");
-					showInfoBox(oCurrScreening.toString());
-					return;
-				}
-			}
-		}
-	}
+                if (arrColumnTitles.length === arrCurrValues.length) {
+                    if (isDate(arrCurrValues[0])) {
+                        var oCurrScreening = new ScreeningObject();
+                        oCurrScreening.addValues(arrColumnTitles, arrCurrValues);
+                        oCurrScreening.setSortColumn("Dialicht");
+                        showInfoBox(oCurrScreening.toString());
+                        return;
+                    }
+                }
+            }
+        }
+    }
 }
 
+/*
+================
+isDate
+================
+*/
+function isDate(strValue)
+{
+    var regex = /(0[1-9]|[12][0-9]|3[01])[.](0[1-9]|1[012])[.](20)\d{2}$/;
+
+    if (regex.test(strValue)) {
+        var arrSplit = strValue.split(".");
+        var iDay = parseInt(arrSplit[0]);
+        var iMonth = parseInt(arrSplit[1]);
+        var iYear = parseInt(arrSplit[2]);
+
+        if (iMonth === 2) {
+            // Schaltjahr?
+            if (iYear % 4 === 0 && (iYear % 100 !== 0 || iYear % 400 === 0)) {
+                return (iDay <= 29 );
+            } else {
+                return (iDay <= 28 );
+            }
+        }
+
+        if ((iMonth === 4) || (iMonth === 6) || (iMonth === 9) || (iMonth === 11)) {
+            return (iDay <= 30);
+        } else {
+            return (iDay <= 31);
+        }
+    }
+
+    return false;
+}
 
 /*
 ================
@@ -163,29 +197,29 @@ setValuesUnique
 */
 function setValuesAsUnique(arrValues)
 {
-	var sTemp = "";
-	for (var iOuterLoop = 0; iOuterLoop < arrValues.length - 1; iOuterLoop++) {
-		sTemp = arrValues[iOuterLoop];
+    var sTemp = "";
+    for (var iOuterLoop = 0; iOuterLoop < arrValues.length - 1; iOuterLoop++) {
+        sTemp = arrValues[iOuterLoop];
 
-		for (var iCheckLoop = iOuterLoop; iCheckLoop < arrValues.length; iCheckLoop++) {
-			if (arrValues[iCheckLoop + 1] === sTemp) {
-				var iWordCounter = 0;
-				for (var iAdjLoop = iOuterLoop; iAdjLoop < arrValues.length; iAdjLoop++) {
-					if (arrValues[iAdjLoop] === sTemp) {
-						arrValues[iAdjLoop] = sTemp + "_" + (++iWordCounter).toString();
-					}
-				}
+        // Check if there are identical values
+        for (var iCheckLoop = iOuterLoop; iCheckLoop < arrValues.length; iCheckLoop++) {
+            if (arrValues[iCheckLoop + 1] === sTemp) {
+                var iValueCounter = 0;
 
-				iWordCounter = 0;
-				break;
-			}
-		}
-	}
+                // Extend values with counting number
+                for (var iAdjLoop = iOuterLoop; iAdjLoop < arrValues.length; iAdjLoop++) {
+                    if (arrValues[iAdjLoop] === sTemp) {
+                        arrValues[iAdjLoop] = sTemp + "_" + (++iValueCounter).toString();
+                    }
+                }
 
-	return arrValues;
+                break;
+            }
+        }
+    }
+
+    return arrValues;
 }
-
-
 
 /*
 ================
@@ -195,13 +229,13 @@ ScreeningObject()
 function ScreeningObject()
 {
     this.dictValues = new Dictionary();
-	this.sSortColumn = "Vorstellung Start";
+    this.sSortColumn = "Vorstellung Start";
 
-	/**
-	 * Fills up dictionary with screening attributes.
-	 * @param {Array} arrNames
-	 * @param {Array} arrValues
-	 */
+    /**
+     * Fills up dictionary with screening attributes.
+     * @param {Array} arrNames
+     * @param {Array} arrValues
+     */
     this.addValues = function(arrNames, arrValues)
     {
         if ((arrNames !== null) && (arrValues !== null)) {
@@ -212,51 +246,49 @@ function ScreeningObject()
     };
 
 
-	/**
-	 * @param {String} sNewSortColumn
-	 */
+    /**
+     * @param {String} sNewSortColumn
+     */
     this.setSortColumn = function(sNewSortColumn)
     {
-	    if (sNewSortColumn !== "" && sNewSortColumn.constructor === String) {
-	        if (this.dictValues.count() > 0 ) {
-	            if (this.dictValues.containsKey(sNewSortColumn)) {
-	                this.sSortColumn = sNewSortColumn;
+        if (sNewSortColumn !== "" && sNewSortColumn.constructor === String) {
+            if (this.dictValues.count() > 0 ) {
+                if (this.dictValues.containsKey(sNewSortColumn)) {
+                    this.sSortColumn = sNewSortColumn;
                 }
             }
-	    }
+        }
     };
 
 
-	/**
-	 * For value comparison.
-	 * @param {Object} oObject1
-	 * @param {Object} oObject2
-	 * @returns {Number}
-	 */
+    /**
+     * For value comparison.
+     * @param {Object} oObject1
+     * @param {Object} oObject2
+     * @returns {Number}
+     */
     this.compare = function( oObject1, oObject2 )
     {
         return 1;
     };
 
 
-	/**
-	 * Returns content of the screening object as String.
-	 * @returns {String}
-	 */
-	this.toString = function()
-	{
-	    sNewString = "";
+    /**
+     * Returns content of the screening object as String.
+     * @returns {String}
+     */
+    this.toString = function()
+    {
+        sNewString = "";
 
-	    for (var x = 0; x < this.dictValues.count(); x++) {
-	        sCurrKey = this.dictValues.getKey(x);
-	        sNewString += "\"" + sCurrKey + "\" --> " + this.dictValues.get(sCurrKey) + "\n";
+        for (var x = 0; x < this.dictValues.count(); x++) {
+            sCurrKey = this.dictValues.getKey(x);
+            sNewString += "\"" + sCurrKey + "\" --> " + this.dictValues.get(sCurrKey) + "\n";
         }
 
-		return sNewString;
-	};
+        return sNewString;
+    };
 }
-
-
 
 /*
 ================
@@ -332,10 +364,10 @@ function Dictionary()
     };
 
 
-	/**
+    /**
      * @param {Number} iPosition
-	 * @returns {String}
-	 */
+     * @returns {String}
+     */
     this.getKey = function(iPosition)
     {
         if (!isNaN(iPosition)) {
